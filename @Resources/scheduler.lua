@@ -2,18 +2,19 @@ divider = '|'
 COLUMN_INDEX_TASK_NAME = 1
 COLUMN_INDEX_TASK_TIME = 2
 
-StartTime = os.time()
 counter = 0
-finish = true
+reset = false
 
 function Initialize()
 	-- Rainmeter vars
-	ScaleFactor = SKIN:GetVariable('ScaleFactor')
 	sTaskListFile = SELF:GetOption('TaskListFile')
-	mode = SKIN:GetVariable('Mode')
-	smoothness = SKIN:GetVariable('Smoothness')
+	ClockMeasure = SKIN:GetMeasure('ClockMeasure')
+	ScaleFactor = SKIN:GetVariable('ScaleFactor')
 	FontColor = SKIN:GetVariable('FONTCOLOR')
-	end
+	frames = SKIN:GetVariable('Smoothness')
+	
+	tasks = GetTasks()
+end
 
 function SplitText(inputstr, sep)
 	local sep=sep or '|'
@@ -34,6 +35,9 @@ function GetTasks()
 end
 
 function setVars()
+	counter = 0
+	reset = false
+	
 	--Scale MatrixTransformation
 	HiddenTaskScaleX = 1 - 8/13
 	HiddenTaskScaleY = 1 - 8/13
@@ -76,7 +80,7 @@ function setVars()
 	NextTaskMoveX = X1 - X1*NextTaskScaleX
 	CurrentTaskMoveX = X1 - X1*CurrentTaskScaleX
 	PreviousTaskMoveX = X1 - X1*PreviousTaskScaleX
-	
+
 	--Task content
 	SKIN:Bang('!SetVariable', 'HiddenTaskTime', tasks[hiddenindex][COLUMN_INDEX_TASK_TIME])
 	SKIN:Bang('!SetVariable', 'HiddenTaskName', tasks[hiddenindex][COLUMN_INDEX_TASK_NAME])
@@ -92,8 +96,10 @@ function setVars()
 	SKIN:Bang('!SetVariable', 'PreviousTaskSize', PreviousTaskSize)
 	SKIN:Bang('!SetVariable', 'CurrentTaskSize', CurrentTaskSize)
 	--Opacity & Color
-	SKIN:Bang('!SetVariable', 'PreviousTaskOpacity', ''..FontColor..','..PreviousTaskOpacity..'')
-	SKIN:Bang('!SetVariable', 'HiddenTaskOpacity', ''..FontColor..','..HiddenTaskOpacity..'')
+	SKIN:Bang('!SetVariable', 'HiddenTaskOpacity', HiddenTaskOpacity)
+	SKIN:Bang('!SetVariable', 'PreviousTaskOpacity', PreviousTaskOpacity)
+	SKIN:Bang('!SetVariable', 'HiddenTaskFontColor', ''..FontColor..','..HiddenTaskOpacity..'')
+	SKIN:Bang('!SetVariable', 'PreviousTaskFontColor', ''..FontColor..','..PreviousTaskOpacity..'')
 	--Y pos
 	SKIN:Bang('!SetVariable', 'HiddenTaskY', HiddenTaskY)
 	SKIN:Bang('!SetVariable', 'NextTaskY', NextTaskY)
@@ -102,7 +108,7 @@ function setVars()
 	--X pos
 	SKIN:Bang('!SetVariable', 'X1', X1)
 	SKIN:Bang('!SetVariable', 'X2', X2)
-	
+
 	--Scale MatrixTransformation
 	SKIN:Bang('!SetVariable', 'HiddenTaskScaleX', HiddenTaskScaleX)
 	SKIN:Bang('!SetVariable', 'HiddenTaskScaleY', HiddenTaskScaleY)
@@ -147,17 +153,17 @@ end
 
 function moveVars()
 	--Opacity
-	deltaHiddenTaskOpacity = (PreviousTaskOpacity - HiddenTaskOpacity)/FPS
-	deltaPreviousTaskOpacity = (HiddenTaskOpacity - PreviousTaskOpacity)/FPS
+	deltaHiddenTaskOpacity = (PreviousTaskOpacity - HiddenTaskOpacity)/frames
+	deltaPreviousTaskOpacity = (HiddenTaskOpacity - PreviousTaskOpacity)/frames
 	
 	tempHiddenTaskOpacity = tempHiddenTaskOpacity + deltaHiddenTaskOpacity
 	tempPreviousTaskOpacity = tempPreviousTaskOpacity + deltaPreviousTaskOpacity
 	
 	--Y position
-	deltaHiddenTaskY = (NextTaskY - HiddenTaskY)/FPS
-	deltaNextTaskY = (CurrentTaskY - NextTaskY)/FPS
-	deltaCurrentTaskY = (PreviousTaskY - CurrentTaskY)/FPS
-	deltaPreviousTaskY =  ((PreviousTaskY + HiddenTaskSize + LineSpacing) - PreviousTaskY)/FPS
+	deltaHiddenTaskY = (NextTaskY - HiddenTaskY)/frames
+	deltaNextTaskY = (CurrentTaskY - NextTaskY)/frames
+	deltaCurrentTaskY = (PreviousTaskY - CurrentTaskY)/frames
+	deltaPreviousTaskY =  ((PreviousTaskY + HiddenTaskSize + LineSpacing) - PreviousTaskY)/frames
 	
 	tempHiddenTaskY = tempHiddenTaskY + deltaHiddenTaskY
 	tempNextTaskY = tempNextTaskY + deltaNextTaskY
@@ -165,14 +171,14 @@ function moveVars()
 	tempPreviousTaskY = tempPreviousTaskY + deltaHiddenTaskY
 	
 	--Scale MatrixTransformation
-	deltaHiddenTaskScaleY = (NextTaskScaleY - HiddenTaskScaleY)/FPS
-	deltaHiddenTaskScaleX  = (NextTaskScaleX - HiddenTaskScaleX)/FPS
-	deltaNextTaskScaleY = (CurrentTaskScaleY - NextTaskScaleY)/FPS
-	deltaNextTaskScaleX = (CurrentTaskScaleX - NextTaskScaleX)/FPS
-	deltaCurrentTaskScaleY = (CurrentTaskScaleY - PreviousTaskScaleY)/FPS
-	deltaCurrentTaskScaleX = (CurrentTaskScaleX - PreviousTaskScaleX)/FPS
-	deltaPreviousTaskScaleY = (PreviousTaskScaleY - HiddenTaskScaleY)/FPS
-	deltaPreviousTaskScaleX = (PreviousTaskScaleX - HiddenTaskScaleX)/FPS
+	deltaHiddenTaskScaleY = (NextTaskScaleY - HiddenTaskScaleY)/frames
+	deltaHiddenTaskScaleX  = (NextTaskScaleX - HiddenTaskScaleX)/frames
+	deltaNextTaskScaleY = (CurrentTaskScaleY - NextTaskScaleY)/frames
+	deltaNextTaskScaleX = (CurrentTaskScaleX - NextTaskScaleX)/frames
+	deltaCurrentTaskScaleY = (CurrentTaskScaleY - PreviousTaskScaleY)/frames
+	deltaCurrentTaskScaleX = (CurrentTaskScaleX - PreviousTaskScaleX)/frames
+	deltaPreviousTaskScaleY = (PreviousTaskScaleY - HiddenTaskScaleY)/frames
+	deltaPreviousTaskScaleX = (PreviousTaskScaleX - HiddenTaskScaleX)/frames
 	
 	tempHiddenTaskScaleY = tempHiddenTaskScaleY + deltaHiddenTaskScaleY
 	tempHiddenTaskScaleX = tempHiddenTaskScaleX + deltaHiddenTaskScaleX
@@ -194,8 +200,8 @@ function moveVars()
 	tempPreviousTaskMoveX = X1 - X1*tempPreviousTaskScaleX
 
 	--Opacity
-	SKIN:Bang('!SetVariable', 'HiddenTaskOpacity', ''..FontColor..','..tempHiddenTaskOpacity..'')
-	SKIN:Bang('!SetVariable', 'PreviousTaskOpacity', ''..FontColor..','..tempPreviousTaskOpacity..'')
+	SKIN:Bang('!SetVariable', 'HiddenTaskOpacity', tempHiddenTaskOpacity)
+	SKIN:Bang('!SetVariable', 'PreviousTaskOpacity', tempPreviousTaskOpacity)
 	--Y position
 	SKIN:Bang('!SetVariable', 'HiddenTaskY', ''..tempHiddenTaskY..'')
 	SKIN:Bang('!SetVariable', 'NextTaskY', ''..tempNextTaskY..'')
@@ -220,73 +226,42 @@ function moveVars()
 	SKIN:Bang('!SetVariable', 'CurrentTaskMoveY', tempCurrentTaskMoveY)	
 	SKIN:Bang('!SetVariable', 'PreviousTaskMoveX', tempPreviousTaskMoveX)
 	SKIN:Bang('!SetVariable', 'PreviousTaskMoveY', tempPreviousTaskMoveY)	
-
 	
-	if tempCurrentTaskScaleY <= PreviousTaskScaleY then
-		done = true
-	else
-		done = false
-	end
+	counter = counter + 1
 end
 
 function GetIndex(list)
-	local CurrentTime = os.date("%H:%M", os.time())
 	for i=1,#list,1 do
-		if CurrentTime < list[i][COLUMN_INDEX_TASK_TIME] then
+		if ClockMeasure:GetStringValue() < list[i][COLUMN_INDEX_TASK_TIME] then
 			return i - 1
 		end
 	end
 end
 
-function GetFPS()
-	local CurrentTime = os.time()
-	counter = counter + 1
-	if (CurrentTime - StartTime) >= 1 then
-		FPS = counter / (CurrentTime - StartTime) or 5
-		counter = 0
-		StartTime = CurrentTime
-	end
-end
-
-function activate()
-	--function starts reshuffling tasks
-	Refresh = SKIN:GetVariable('Refresh')
-	if tonumber(Refresh) == 1 then done = false else done = true end
-	if tempCurrentTaskScaleY <= PreviousTaskScaleY then
-		done = true
-	end
-end
-
 function Update()
-	tasks = GetTasks()
+		
+	if SKIN:GetVariable('CurrentTaskName') == nil or reset == true then
 	
-	--Mode
-	if tonumber(mode) == 1 then
-		GetFPS()		
-	else
-		FPS = smoothness
-	end
-	
-	--Index
-	index = GetIndex(tasks) or #tasks
-	if index < 1 then index = #tasks end --або 1
-	preindex = index - 1
-	if preindex < 1 then preindex = #tasks end
-	nextindex = index + 1
-	if nextindex > #tasks then nextindex = 1 end
-	hiddenindex = nextindex + 1
-	if hiddenindex > #tasks then hiddenindex = 1 end
-	
-	--Vars
-	if index ~= temp or done == false then
-		temp = index
-		moveVars()
-	else
-		temp = index
+		index = GetIndex(tasks) or #tasks
+		if index < 1 then index = #tasks end
+		preindex = index - 1
+		if preindex < 1 then preindex = #tasks end
+		nextindex = index + 1
+		if nextindex > #tasks then nextindex = 1 end
+		hiddenindex = nextindex + 1
+		if hiddenindex > #tasks then hiddenindex = 1 end
+		
 		setVars()
+
+	elseif ClockMeasure:GetStringValue() == tasks[nextindex][COLUMN_INDEX_TASK_TIME] then
+		
+		if counter < tonumber(frames) then
+			moveVars()
+		else
+			reset = true
+		end
+	
 	end
-	
-	-- activate() --debug
-	
+
 	return true
 end
